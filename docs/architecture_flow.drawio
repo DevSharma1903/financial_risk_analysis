@@ -1,0 +1,254 @@
+<mxfile host="app.diagrams.net" modified="2026-08-31T10:50:00.000Z" agent="Mozilla/5.0" version="21.0.0" type="device">
+  <diagram id="FinancialRiskDetectorArch" name="Pipeline Architecture">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1020" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ==================== HEADER BANNER ==================== -->
+        <mxCell id="hdr_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F2537;strokeColor=#0A1926;shadow=1;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="30" y="15" width="1620" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_title" value="&lt;font color=&quot;#FFFFFF&quot; face=&quot;Segoe UI, Helvetica, Arial&quot;&gt;&lt;b style=&quot;font-size: 19px;&quot;&gt;Financial Risk Detector: End-to-End SEC Machine Learning Pipeline Architecture&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 12px; color: #8ED1FC;&quot;&gt;Automated SEC EDGAR Scraping • Zero-Failure MD&amp;amp;A Extraction • Full-Doc FinBERT + Lexicon Vectorization • 5-Fold Benchmarking • Real-Time Inference&lt;/span&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1600" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== STAGE 1: SWIMLANE & NODES ==================== -->
+        <mxCell id="lane1" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;STAGE 1: Ingestion &amp;amp; Ground-Truth Labeling&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size: 11px;&quot;&gt;src/01_label_data.py&lt;/i&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#F0F4F8;strokeColor=#4A6984;fontColor=#1C2D42;startSize=50;rounded=1;arcSize=4;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="90" width="300" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_node1" value="&lt;b&gt;SEC DERA Submissions&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;&#39;data/raw/*/sub.txt&#39;&lt;br&gt;(Multi-Quarter Filing Index)&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#D2DFEC;strokeColor=#3B5B78;fontColor=#1C2D42;" vertex="1" parent="lane1">
+          <mxGeometry x="30" y="70" width="240" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_node2" value="&lt;b&gt;Filing Filter &amp;amp; Aggregation&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;• Parse 10-K &amp;amp; 10-Q filings&lt;br&gt;• Identify CIK &amp;amp; Period keys&lt;br&gt;• Aggregate 46,000+ raw records&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6B8BA4;fontColor=#1C2D42;arcSize=8;" vertex="1" parent="lane1">
+          <mxGeometry x="30" y="170" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_node3" value="&lt;b&gt;Ground-Truth Association&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;• Scan subsequent 10-K/A &amp;amp; 10-Q/A&lt;br&gt;• Filter 8-K Item 4.02 Non-Reliance&lt;br&gt;• Match by (CIK, Period) tuples&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6B8BA4;fontColor=#1C2D42;arcSize=8;" vertex="1" parent="lane1">
+          <mxGeometry x="30" y="280" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_node4" value="&lt;b&gt;Binary Risk Definition&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;&lt;font color=&quot;#C62828&quot;&gt;&lt;b&gt;y = 1:&lt;/b&gt;&lt;/font&gt; Restated / Amended Filing&lt;br&gt;&lt;font color=&quot;#2E7D32&quot;&gt;&lt;b&gt;y = 0:&lt;/b&gt;&lt;/font&gt; Clean Baseline Filing&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6B8BA4;fontColor=#1C2D42;arcSize=8;" vertex="1" parent="lane1">
+          <mxGeometry x="30" y="395" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_node5" value="&lt;b&gt;Deduplication &amp;amp; Balancing&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;• Deduplicate by Accession (ADSH)&lt;br&gt;• 1:1 Positive-to-Negative Balance&lt;br&gt;• Random Seed: 42&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6B8BA4;fontColor=#1C2D42;arcSize=8;" vertex="1" parent="lane1">
+          <mxGeometry x="30" y="500" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_node6" value="&lt;b&gt;data/labeled_index.csv&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Balanced Target Index&lt;br&gt;(1,012+ Validated Samples)&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#D2DFEC;strokeColor=#3B5B78;fontColor=#1C2D42;" vertex="1" parent="lane1">
+          <mxGeometry x="30" y="770" width="240" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- S1 Internal Arrows -->
+        <mxCell id="e_s1_1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3B5B78;strokeWidth=1.5;" edge="1" parent="lane1" source="s1_node1" target="s1_node2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s1_2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3B5B78;strokeWidth=1.5;" edge="1" parent="lane1" source="s1_node2" target="s1_node3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s1_3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3B5B78;strokeWidth=1.5;" edge="1" parent="lane1" source="s1_node3" target="s1_node4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s1_4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3B5B78;strokeWidth=1.5;" edge="1" parent="lane1" source="s1_node4" target="s1_node5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s1_5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3B5B78;strokeWidth=1.5;" edge="1" parent="lane1" source="s1_node5" target="s1_node6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== STAGE 2: SWIMLANE & NODES ==================== -->
+        <mxCell id="lane2" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;STAGE 2: SEC Scraping &amp;amp; Text Parsing&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size: 11px;&quot;&gt;src/02_fetch_mda.py&lt;/i&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#E0F2F1;strokeColor=#00796B;fontColor=#004D40;startSize=50;rounded=1;arcSize=4;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="90" width="300" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="s2_node1" value="&lt;b&gt;Target Ingestion &amp;amp; Cache Check&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;• Read &#39;labeled_index.csv&#39;&lt;br&gt;• Skip already cached ADSHs&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#26A69A;fontColor=#004D40;arcSize=8;" vertex="1" parent="lane2">
+          <mxGeometry x="30" y="70" width="240" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="s2_node2" value="&lt;b&gt;SEC EDGAR HTTPS Fetcher&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;• Strict &#39;SEC_USER_AGENT&#39; header&lt;br&gt;• 0.15s rate-limit delay (Safe/Legal)&lt;br&gt;• Exponential backoff &amp;amp; retry&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#26A69A;fontColor=#004D40;arcSize=8;" vertex="1" parent="lane2">
+          <mxGeometry x="30" y="170" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="s2_node3" value="&lt;b&gt;HTML / iXBRL Tag Normalizer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;• BeautifulSoup (&#39;lxml&#39; engine)&lt;br&gt;• Suppress XMLParsedAsHTMLWarning&lt;br&gt;• Convert &amp;lt;p&amp;gt;, &amp;lt;br&amp;gt;, &amp;lt;div&amp;gt; to &#39;\n&#39;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#26A69A;fontColor=#004D40;arcSize=8;" vertex="1" parent="lane2">
+          <mxGeometry x="30" y="280" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s2_node4" value="&lt;b&gt;Fault-Tolerant MD&amp;amp;A Extraction&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;• Item 7 (10-K) &amp;amp; Item 2 (10-Q) Regex&lt;br&gt;• Linebreak-enforced boundary check&lt;br&gt;• Filter Table-of-Contents (&amp;gt;2000 ch)&lt;br&gt;• Fallback heuristic chunker&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#26A69A;fontColor=#004D40;arcSize=8;" vertex="1" parent="lane2">
+          <mxGeometry x="30" y="395" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s2_node5" value="&lt;b&gt;data/mda_corpus.csv&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Extracted MD&amp;amp;A Narratives&lt;br&gt;(Clean, Tokenized Corpus)&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#B2DFDB;strokeColor=#00695C;fontColor=#004D40;" vertex="1" parent="lane2">
+          <mxGeometry x="30" y="770" width="240" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- S2 Internal Arrows -->
+        <mxCell id="e_s2_1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#00796B;strokeWidth=1.5;" edge="1" parent="lane2" source="s2_node1" target="s2_node2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s2_2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#00796B;strokeWidth=1.5;" edge="1" parent="lane2" source="s2_node2" target="s2_node3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s2_3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#00796B;strokeWidth=1.5;" edge="1" parent="lane2" source="s2_node3" target="s2_node4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s2_4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#00796B;strokeWidth=1.5;" edge="1" parent="lane2" source="s2_node4" target="s2_node5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== STAGE 3: SWIMLANE & NODES ==================== -->
+        <mxCell id="lane3" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;STAGE 3: Hybrid Feature Vectorization&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size: 11px;&quot;&gt;src/03_feature_engine.py&lt;/i&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#E1F5FE;strokeColor=#0288D1;fontColor=#01579B;startSize=50;rounded=1;arcSize=4;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="690" y="90" width="320" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_node1" value="&lt;b&gt;Corpus Ingestion&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;&#39;data/mda_corpus.csv&#39;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#29B6F6;fontColor=#01579B;arcSize=8;" vertex="1" parent="lane3">
+          <mxGeometry x="40" y="70" width="240" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_node2a" value="&lt;b&gt;Loughran-McDonald&lt;br&gt;Master Dictionary&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Tone Proportions (4-dim)&lt;br&gt;• Negative&lt;br&gt;• Uncertainty&lt;br&gt;• Litigious&lt;br&gt;• Constraining&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0288D1;fontColor=#01579B;arcSize=8;" vertex="1" parent="lane3">
+          <mxGeometry x="20" y="150" width="130" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_node2b" value="&lt;b&gt;Risk N-Gram&lt;br&gt;TF-IDF Lexicon&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Domain Red Flags (8-dim)&lt;br&gt;• &#39;material weakness&#39;&lt;br&gt;• &#39;restatement&#39;&lt;br&gt;• &#39;non-reliance&#39;&lt;br&gt;• &#39;going concern&#39;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0288D1;fontColor=#01579B;arcSize=8;" vertex="1" parent="lane3">
+          <mxGeometry x="170" y="150" width="130" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_node3" value="&lt;b&gt;Contextual Semantic Embeddings&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;&lt;b&gt;ProsusAI/finbert&lt;/b&gt; (768-dimensional)&lt;br&gt;• Sliding Window Chunking (512 max, 256 stride)&lt;br&gt;• Zero-Truncation: Full Document Coverage&lt;br&gt;• Document-Level Mean Pooling&lt;br&gt;• Batched PyTorch &lt;i&gt;torch.no_grad()&lt;/i&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#29B6F6;fontColor=#01579B;arcSize=8;" vertex="1" parent="lane3">
+          <mxGeometry x="20" y="300" width="280" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_node4" value="&lt;b&gt;Multimodal Feature Concatenation&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Horizontal Fusion Matrix:&lt;br&gt;[4 LM] + [8 TF-IDF] + [768 FinBERT]&lt;br&gt;&lt;b&gt;→ Unified (N, 780) Dense Feature Space&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0288D1;fontColor=#01579B;arcSize=8;" vertex="1" parent="lane3">
+          <mxGeometry x="20" y="440" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_node5" value="&lt;b&gt;data/X.npy &amp;amp; data/y.npy&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Cached Numpy Tensors&lt;br&gt;+ &#39;models/tfidf_vectorizer.pkl&#39;&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#B3E5FC;strokeColor=#0277BD;fontColor=#01579B;" vertex="1" parent="lane3">
+          <mxGeometry x="40" y="770" width="240" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- S3 Internal Arrows -->
+        <mxCell id="e_s3_1a" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0288D1;strokeWidth=1.5;" edge="1" parent="lane3" source="s3_node1" target="s3_node2a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s3_1b" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0288D1;strokeWidth=1.5;" edge="1" parent="lane3" source="s3_node1" target="s3_node2b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s3_1c" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0288D1;strokeWidth=1.5;" edge="1" parent="lane3" source="s3_node1" target="s3_node3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s3_2a" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0288D1;strokeWidth=1.5;" edge="1" parent="lane3" source="s3_node2a" target="s3_node4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s3_2b" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0288D1;strokeWidth=1.5;" edge="1" parent="lane3" source="s3_node2b" target="s3_node4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s3_2c" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0288D1;strokeWidth=1.5;" edge="1" parent="lane3" source="s3_node3" target="s3_node4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s3_3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0288D1;strokeWidth=1.5;" edge="1" parent="lane3" source="s3_node4" target="s3_node5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== STAGE 4: SWIMLANE & NODES ==================== -->
+        <mxCell id="lane4" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;STAGE 4: Multi-Model Benchmarking&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size: 11px;&quot;&gt;src/04_train.py&lt;/i&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#EDE7F6;strokeColor=#5E35B1;fontColor=#311B92;startSize=50;rounded=1;arcSize=4;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="90" width="300" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="s4_node1" value="&lt;b&gt;Feature Tensor Loading&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;&#39;data/X.npy&#39; &amp;amp; &#39;data/y.npy&#39;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7E57C2;fontColor=#311B92;arcSize=8;" vertex="1" parent="lane4">
+          <mxGeometry x="30" y="70" width="240" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s4_node2" value="&lt;b&gt;Validation &amp;amp; Scaling Setup&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;• Stratified 5-Fold Cross Validation&lt;br&gt;• StandardScaler Pipelines&lt;br&gt;• Class weighting (scale_pos_weight)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7E57C2;fontColor=#311B92;arcSize=8;" vertex="1" parent="lane4">
+          <mxGeometry x="30" y="150" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="s4_node3" value="&lt;b&gt;Model Benchmark Tournament&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;1. &lt;b&gt;Logistic Regression&lt;/b&gt; (L2 Pipeline)&lt;br&gt;2. &lt;b&gt;Linear SVM&lt;/b&gt; (SGD ElasticNet)&lt;br&gt;3. &lt;b&gt;Random Forest&lt;/b&gt; (Balanced Bagging)&lt;br&gt;4. &lt;b&gt;XGBoost&lt;/b&gt; (Regularized Boosted Trees)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5E35B1;fontColor=#311B92;arcSize=8;" vertex="1" parent="lane4">
+          <mxGeometry x="30" y="255" width="240" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="s4_node4" value="&lt;b&gt;Cross-Validation Metrics Audit&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;• &lt;b&gt;ROC-AUC:&lt;/b&gt; 0.7470&lt;br&gt;• &lt;b&gt;F1-Score:&lt;/b&gt; 0.7010&lt;br&gt;• &lt;b&gt;Precision:&lt;/b&gt; 0.6889 | &lt;b&gt;Recall:&lt;/b&gt; 0.7134&lt;br&gt;• &lt;b&gt;Brier Calibration Score:&lt;/b&gt; 0.2044&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7E57C2;fontColor=#311B92;arcSize=8;" vertex="1" parent="lane4">
+          <mxGeometry x="30" y="385" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s4_node5" value="&lt;b&gt;Winner Selection &amp;amp; Full Fit&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Select Best Model (&lt;b&gt;XGBoost&lt;/b&gt;)&lt;br&gt;Fit on full corpus for deployment&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7E57C2;fontColor=#311B92;arcSize=8;" vertex="1" parent="lane4">
+          <mxGeometry x="30" y="505" width="240" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="s4_node6" value="&lt;b&gt;Production Model Artifacts&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;&#39;models/best_risk_model.json&#39;&lt;br&gt;+ &#39;models/best_model_meta.json&#39;&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#D1C4E9;strokeColor=#4527A0;fontColor=#311B92;" vertex="1" parent="lane4">
+          <mxGeometry x="30" y="770" width="240" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- S4 Internal Arrows -->
+        <mxCell id="e_s4_1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#5E35B1;strokeWidth=1.5;" edge="1" parent="lane4" source="s4_node1" target="s4_node2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s4_2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#5E35B1;strokeWidth=1.5;" edge="1" parent="lane4" source="s4_node2" target="s4_node3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s4_3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#5E35B1;strokeWidth=1.5;" edge="1" parent="lane4" source="s4_node3" target="s4_node4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s4_4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#5E35B1;strokeWidth=1.5;" edge="1" parent="lane4" source="s4_node4" target="s4_node5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s4_5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#5E35B1;strokeWidth=1.5;" edge="1" parent="lane4" source="s4_node5" target="s4_node6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== STAGE 5: SWIMLANE & NODES ==================== -->
+        <mxCell id="lane5" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;STAGE 5: Live Inference Pipeline&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size: 11px;&quot;&gt;src/05_predict_url.py&lt;/i&gt;" style="swimlane;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontColor=#1B5E20;startSize=50;rounded=1;arcSize=4;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1370" y="90" width="300" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="s5_node1" value="&lt;b&gt;User CLI Input&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Live SEC EDGAR URL&lt;br&gt;(10-K or 10-Q .htm / .txt)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#43A047;fontColor=#1B5E20;arcSize=8;" vertex="1" parent="lane5">
+          <mxGeometry x="30" y="70" width="240" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="s5_node2" value="&lt;b&gt;Real-Time Fetch &amp;amp; Isolation&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;• Live HTTP request with User-Agent&lt;br&gt;• BeautifulSoup lxml text sanitization&lt;br&gt;• Robust MD&amp;amp;A regex extraction&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#43A047;fontColor=#1B5E20;arcSize=8;" vertex="1" parent="lane5">
+          <mxGeometry x="30" y="160" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s5_node3" value="&lt;b&gt;On-The-Fly Vectorization&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;• LM Tone Ratios (4-dim)&lt;br&gt;• Load TF-IDF Vectorizer (8-dim)&lt;br&gt;• FinBERT sliding window mean-pool&lt;br&gt;&lt;b&gt;→ 780-dim feature vector (1, 780)&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#43A047;fontColor=#1B5E20;arcSize=8;" vertex="1" parent="lane5">
+          <mxGeometry x="30" y="275" width="240" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="s5_node4" value="&lt;b&gt;Model Probability Scoring&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;• Load &#39;best_risk_model.json&#39;&lt;br&gt;• Predict probability P(y=1)&lt;br&gt;• Decision Threshold: 0.50&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#43A047;fontColor=#1B5E20;arcSize=8;" vertex="1" parent="lane5">
+          <mxGeometry x="30" y="405" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s5_node5" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;Terminal Audit Report&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Risk Score: &lt;b&gt;XX.XX%&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;b style=&quot;color: #C62828; font-size: 11px;&quot;&gt;[HIGH RISK FLAG]&lt;/b&gt; (if ≥ 50%)&lt;br&gt;&lt;i&gt;Review &amp;amp; Audit Required&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b style=&quot;color: #2E7D32; font-size: 11px;&quot;&gt;[NORMAL]&lt;/b&gt; (if &amp;lt; 50%)&lt;br&gt;&lt;i&gt;No Restatement Risk Detected&lt;/i&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#1B5E20;fontColor=#1B5E20;arcSize=8;shadow=1;" vertex="1" parent="lane5">
+          <mxGeometry x="30" y="525" width="240" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- S5 Internal Arrows -->
+        <mxCell id="e_s5_1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2E7D32;strokeWidth=1.5;" edge="1" parent="lane5" source="s5_node1" target="s5_node2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s5_2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2E7D32;strokeWidth=1.5;" edge="1" parent="lane5" source="s5_node2" target="s5_node3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s5_3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2E7D32;strokeWidth=1.5;" edge="1" parent="lane5" source="s5_node3" target="s5_node4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s5_4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2E7D32;strokeWidth=1.5;" edge="1" parent="lane5" source="s5_node4" target="s5_node5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== INTER-STAGE CONNECTORS ==================== -->
+        <!-- Stage 1 -> Stage 2 -->
+        <mxCell id="e_inter_1_2" value="Target Index" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#00796B;strokeWidth=2.5;fontColor=#004D40;fontStyle=1;fontSize=11;" edge="1" parent="1" source="s1_node6" target="s2_node1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="345" y="895" />
+              <mxPoint x="345" y="192" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Stage 2 -> Stage 3 -->
+        <mxCell id="e_inter_2_3" value="Extracted Text" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0288D1;strokeWidth=2.5;fontColor=#01579B;fontStyle=1;fontSize=11;" edge="1" parent="1" source="s2_node5" target="s3_node1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="675" y="895" />
+              <mxPoint x="675" y="185" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Stage 3 -> Stage 4 -->
+        <mxCell id="e_inter_3_4" value="Dense Matrices" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#5E35B1;strokeWidth=2.5;fontColor=#311B92;fontStyle=1;fontSize=11;" edge="1" parent="1" source="s3_node5" target="s4_node1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1025" y="895" />
+              <mxPoint x="1025" y="185" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Stage 4 -> Stage 5 (Model Artifact Flow) -->
+        <mxCell id="e_inter_4_5" value="Trained XGBoost Artifact" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2E7D32;strokeWidth=2.5;dashed=1;fontColor=#1B5E20;fontStyle=1;fontSize=11;" edge="1" parent="1" source="s4_node6" target="s5_node4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1355" y="895" />
+              <mxPoint x="1355" y="535" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
