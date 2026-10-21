@@ -1,88 +1,145 @@
-# Financial Risk Detector: academic SEC amendment study
+# Financial Risk Detector: confirmed restatement study
 
-Large SEC datasets, cached filings, compressed exports, trained model artifacts, and local credentials are intentionally excluded from Git. Follow the data paths below when preparing a local or Colab run; the source code and clean notebooks are included in the repository.
+## Research question
 
-## What the model predicts
+Can the MD&A in an original SEC 10-K or 10-Q help predict whether the issuer later reports a confirmed financial-statement restatement within a selected 1-, 3-, or 5-year horizon?
 
-The target is whether an original SEC 10-K or 10-Q receives a **same-period 10-K/A or 10-Q/A within 365 days**. This is an amendment proxy, not a confirmed restatement, fraud label, or investment signal. An amendment can have many causes. Use the outputs only for academic research, not investment, lending, audit, or operational decisions.
+The current target is **issuer-level**: a qualifying event need not restate the exact period covered by the original MD&A filing. Do not describe it as period-specific prediction. It is not the old same-period amendment proxy. A 10-K/A or 10-Q/A is only a review candidate: routine amendments, immaterial revisions, corporate charter changes, stock splits, and new accounting-standard adoption are not automatically restatements. Outcomes need primary SEC evidence. The study is academic and is not a fraud detector or an investment, lending, audit, or operational tool.
 
-The study uses every positive filing and one randomly selected negative from the same filing year and form in each balanced cohort. It also reports performance on **all** filings in the later cohort, where amendments are rare. A high balanced accuracy or precision does not imply high natural-prevalence precision. There is no honest guarantee that precision, recall, F1, or accuracy will exceed 85%.
+The primary requested score is performance on a reviewed 1:1 case-control cohort. The queue intentionally samples amendment candidates and controls, so this does not estimate real-world prevalence or precision. No code can guarantee 85% or higher metrics. The notebook reports development model-selection metrics separately from a latest-years holdout; the holdout is only useful when it contains enough reviewed outcomes and issuers.
 
-## Current experiment: research v5 (reuse the CSV already on Drive)
+## What changed
 
-The uploaded v4 run has 72.57% balanced accuracy, 70.06% precision, 78.82% recall, and 74.18% F1. At natural prevalence its selected threshold yields 85.65% accuracy, 4.73% precision, and 53.13% recall. These are the baseline results, **not new v5 scores**. V5 has to be trained on Colab before its improvement can be measured.
+- Same-period amendment candidates now cover up to five years, so events after day 365 can be reviewed. The retrieval window is not the outcome rule.
+- A new ledger validator requires event dates, primary SEC evidence, reviewer identity, and an explicit outcome follow-up date. Pending rows never become labels.
+- An AI-assisted SEC full-text screen searches each issuer's horizon, retrieves matching SEC documents, and leaves ambiguous hits pending. It is an exploratory label pass, not expert or human adjudication. Its query cache and evidence manifest make the screen auditable and resumable.
+- Horizon labels are derived from the documented event date. For a negative at horizon H, the review must cover the full H years. Positive events inside H can be used as soon as the event is documented.
+- The GPU notebook downloads only reviewed original filings and their immediately prior same-issuer/form filings. It adds point-in-time ratio trajectories from up to three earlier same-issuer/form filings and embeds the full available MD&A section (up to 6,000 words), rather than embedding only the opening 1,120 words. It compares structured financial features, interpretable MD&A cues and changes, and financial plus MiniLM semantic changes across GPU XGBoost and CatBoost. These are new hypotheses; their effect must be measured on the untouched future holdout.
+- Model and threshold selection use issuer-grouped development folds. The latest filing years are held aside, and the main report includes matched 1:1 metrics.
+- SEC downloads use public filing archives, an identifying User-Agent, sequential requests at no more than two per second, resumable storage, and stop on HTTP 403.
 
-1. Use the v5 notebooks included in this repository. Leave `MyDrive/financial-risk-detector/data/colab_amendment_proxy.csv.gz` where it is. **Do not upload the 27 GB raw folder or prepare the CSV again.** The notebooks embed their source code; separate script uploads are unnecessary.
-2. In Colab choose **File > Upload notebook**, and open [notebooks/financial_risk_detector_v5_evidence_colab.ipynb](notebooks/financial_risk_detector_v5_evidence_colab.ipynb). Run the cells in order and mount Drive. A CPU runtime is sufficient for evidence collection.
-3. Enter a real SEC User-Agent (name/organization and contact email) when prompted. The required step caches 67 quarterly master indexes, retaining relevant filing records. Keep `DOWNLOAD_TEXT=False` for the first run. It prints `READY` when the required evidence is complete. An interrupted download resumes cached quarters.
-4. Open [notebooks/financial_risk_detector_v5_gpu_colab.ipynb](notebooks/financial_risk_detector_v5_gpu_colab.ipynb). Select **Runtime > Change runtime type > T4 GPU** (or another NVIDIA GPU). Run cells in order. Keep `USE_TEXT=False`. The first cell confirms CUDA and prints `nvidia-smi`; every training backend explicitly uses GPU and refuses CPU fallback.
-5. If Colab requests a restart after installing dependencies, restart and run the cells again. Completed model members resume from Drive when code, data, dependencies and GPU type match. The pipeline leaves v4 outputs intact and writes to `colab_outputs/research_v5_<fingerprint>/`.
-6. Return `metrics.json`, `cv_leaderboard.csv`, `provenance.json`, and `development_predictions.csv.gz` from the printed output directory. In `metrics.json`, inspect `balanced.development` and `natural.development`, together with confidence intervals and `all_four_metrics_ge_80`/`all_four_metrics_ge_85`.
+## Full MD&A archive extension
 
-If SEC access is denied, the collector stops. Retry later on an allowed connection; do not bypass the denial. The evidence collector also works locally without model fitting: `python src/sec_v5_evidence.py --root .`. It uses `SEC_USER_AGENT` if set, otherwise prompts. Copy only the resulting `evidence_v5/indexes/` directory into `MyDrive/financial-risk-detector/evidence_v5/indexes/`. Local prerequisites are pandas, numpy, pyarrow and beautifulsoup4.
+The first confirmed-restatement notebook uses reviewed outcome rows and fetches their current/prior MD&A from SEC. The full-archive version also uses the locally collected MD&A corpus (about 16,400 sections, 2009–2025) to learn an unlabeled TF-IDF/SVD language representation. Only archive text filed before the future holdout fits that representation. The corpus's legacy amendment-proxy target is not loaded. Supervised restatement labels still come only from the reviewed outcome ledger, so this addition does not turn the proxy into a restatement label or train on the holdout.
 
-### What v5 changes
-
-- Complete public filing-index history adds strictly earlier 8-K, late-filing notice, and amendment counts across several time windows. The existing FSDS proxy labels are retained.
-- Prior issuer outcomes enter features only after their entire 365-day observation window has closed. Financial features add three-filing trends, deviations, missingness, and comparisons to the prior year's industry peers.
-- Seven strategies compare a v4-feature reference, three balanced negative samples, a recent-years model, CatBoost, separate 10-K/10-Q specialists, a GPU neural network, and an all-controls model with equal total positive/negative weight. The reference uses v4 features; it is not a byte-for-byte reproduction of the prior training run.
-- Forward validation selects a single model or an average of the top three. Balanced and natural-prevalence objectives select their models separately. Calibration chooses the threshold maximizing the worst of accuracy, precision, recall and F1.
-- Completed model members, feature schemas, GPU confirmation, dependency versions, source/data fingerprints and prediction files are saved. Issuer-level bootstrap intervals show uncertainty. No model is fitted locally.
-
-Optional text experiment: in the evidence notebook set `DOWNLOAD_TEXT=True`. Rerun its last cell until `pending` is zero (`MAX_NEW_TEXT=3000` per session; `0` means all remaining). It fetches only original submissions and extracts compact disclosure windows; it excludes amendments, exhibits and SEC headers. The current CSV produces a manifest of **111,189 filings**: at two requests/second, downloads alone require at least 15.4 hours before network delays, plus additional cache space. This is unnecessary for the first experiment. At least 90% usable text is required, and missing documents remain in evaluation. Then set `USE_TEXT=True` in the GPU notebook. A frozen, revision-recorded [Apache-2.0 MiniLM encoder](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) creates GPU embeddings, and two additional disclosure models are compared. These are keyword-centered excerpts, not verified SEC item sections.
-
-### Standalone MD&A text experiment (prepared corpus already local)
-
-Use [notebooks/financial_risk_detector_mda_text_gpu_colab.ipynb](notebooks/financial_risk_detector_mda_text_gpu_colab.ipynb) for the existing `data/colab_mda_text_case_control.csv.gz`; upload it and `data/colab_amendment_proxy.csv.gz` to Drive under `data/`. The experiment uses the current accession-matched proxy labels and ignores the corpus' legacy `y`. It compares GPU XGBoost and neural models with text-only and text-plus-financial features, including point-in-time changes from the previous same-form filing. Training controls are matched by filing year and form. Early stopping occurs on an inner year, while model selection uses later outer years; those folds select models and are not a pristine score estimate after trying candidates. The report includes a 20-draw matched-sample sensitivity check with a fixed calibrated threshold. Completed GPU folds and final model members are checkpointed by source/data fingerprint for compatible resume after interruption. Outputs remain selected case-control development metrics, not natural-population estimates or a fresh final test.
-
-### Expanded MD&A and confirmed-label pilot
-
-The expanded experiment adds bounded Item 7 (10-K) / Item 2 (10-Q) extraction, text novelty and embedding changes against a strictly earlier same-issuer/form filing, streamed full-document embeddings, sparse word/character TF-IDF, a GPU pairwise ranker, and separate 10-K/10-Q model specialists. It calibrates optional form-specific thresholds on 2023 only, with a minimum group-size fallback. It also permanently excludes legacy target aliases from predictors. Results are still measured against the existing amendment proxy; this cannot turn proxy labels into confirmed restatements or guarantee higher scores.
-
-1. The notebooks are already generated at [notebooks/financial_risk_detector_mda_sections_prepare_colab.ipynb](notebooks/financial_risk_detector_mda_sections_prepare_colab.ipynb) and [notebooks/financial_risk_detector_mda_advanced_gpu_colab.ipynb](notebooks/financial_risk_detector_mda_advanced_gpu_colab.ipynb). After changing their source scripts, regenerate them with `python src/21_build_mda_advanced_colab.py`.
-2. Keep `data/colab_amendment_proxy.csv.gz` on Drive at `MyDrive/financial-risk-detector/data/`. No 27 GB raw-data upload is needed. For a run right away, also upload the existing `data/colab_mda_text_case_control.csv.gz`; the GPU notebook uses expanded text if it exists, otherwise it uses this existing sample.
-3. To expand the text, open the preparation notebook with a CPU runtime, mount Drive, enter a real SEC User-Agent when prompted, and run the cells. It fetches only the fixed manifest's original public filings, at no more than two requests/second, and stops on HTTP 403. The manifest has about 111,189 filings: the request floor is about 15.4 hours, with no guarantee about network or filing response time. The notebook checkpoints into `evidence_v5/mda_sections/` in Drive; rerun its collection cell across sessions until `pending` is zero. It then writes `data/colab_mda_text_expanded.csv.gz`. Monitor available Drive storage while the compressed filing cache accumulates; expansion is optional.
-4. Open the advanced GPU notebook, select **Runtime > Change runtime type > T4 GPU**, and run the cells in order. It checks CUDA before training and each model trainer refuses a CPU fallback. If Colab asks for a runtime restart after package installation, select GPU again and rerun from the top. The output path is printed; return `metrics.json`, `cv_leaderboard.csv`, `development_predictions_case_control.csv.gz`, and (when available) `issuer_disjoint_predictions_case_control.csv.gz`.
-5. The new issuer-disjoint score is exploratory because the date range was previously inspected. Do not present it or the matched 1:1 results as a fresh independent estimate. Do not tune against these metrics and then call them untouched test performance.
-
-For a distinct confirmed-restatement target, `python src/20_prepare_restatement_pilot.py --n-each 150` creates `data/restatement_review_pilot.csv` with 150 amendment candidates and 150 proxy-negative controls. The supplied local pilot is already generated. Every label is intentionally pending: a reviewer must check primary SEC evidence and document the event type/date/link before using these rows. This pilot is separate from proxy training and should not be used to select a model until adjudication is complete.
-
-### Evaluation boundaries
-
-V5 validates on 2020 and 2022, with training ending in 2018 and 2020 respectively. Final evaluation models train through 2021, calibrate thresholds on 2023Q1–Q3, and evaluate on 2024Q4–2025Q3. The gaps allow 365-day labels to mature. The latter cohort **has now been inspected in v4**, so v5 calls it development data; it cannot establish untouched future performance. No 80–85% result is promised or fabricated. A new independent evaluation will be necessary before making a generalization claim.
-
-Current SEC index snapshots can reflect subsequent corrections or removals, and history begins in 2009. Original text availability is reported by year and label. Public data access is sequential, at most two requests/second, with a declared identity, backoff, and a stop on HTTP 403. See [SEC access and index guidance](https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data). These controls support responsible academic use; they are not a blanket legal certification.
-
-## Previous v4 workflow: prepare from local raw data
-
-The existing `data/raw/` directory is about 27 GB. Preparing the CSV locally avoids uploading that whole tree to Drive; **all model fitting still happens only on the Colab GPU**. From PowerShell in the project directory:
+When the current Colab run finishes, prepare and build the next notebook locally:
 
 ```powershell
-$env:SEC_USER_AGENT = "Your Real Name your_email@example.com"
-python src/12_update_sec_quarters.py
-python src/09_prepare_colab_dataset.py
+python src/26_prepare_mda_archive.py
+python src/27_build_full_archive_restatement_colab.py
 ```
 
-Upload `data/colab_amendment_proxy.csv.gz` to `MyDrive/financial-risk-detector/data/colab_amendment_proxy.csv.gz`. Then open [notebooks/financial_risk_detector_gpu_colab.ipynb](notebooks/financial_risk_detector_gpu_colab.ipynb) in Colab, select **Runtime > Change runtime type > GPU**, and run all cells. It checks CUDA before fitting. Read `MyDrive/financial-risk-detector/colab_outputs/schema_v4_final/metrics.json` afterward.
+The first command reads `data/mda_corpus.csv`, validates accession/form/date against the prepared proxy, truncates very long sections to 20,000 words, and writes the label-free `data/colab_mda_archive_unlabeled.csv.gz` plus a manifest. It does not fit a model. The 27 GB raw filing tree is not uploaded.
 
-## Alternative: prepare and train in Colab
+Create `MyDrive/financial-risk-detector/data/` and upload:
 
-1. In Google Drive, create `MyDrive/financial-risk-detector/`. Upload the existing `data/raw/` tree to `MyDrive/financial-risk-detector/data/raw/`. It should contain all 67 quarters from `2009Q1` through `2025Q3`, each with `sub.txt` and `num.txt`.
-2. Upload [src/09_prepare_colab_dataset.py](src/09_prepare_colab_dataset.py) and [src/12_update_sec_quarters.py](src/12_update_sec_quarters.py) to `MyDrive/financial-risk-detector/src/`.
-3. Open [notebooks/prepare_sec_data_colab.ipynb](notebooks/prepare_sec_data_colab.ipynb) in Colab and run all cells. Enter a real identifying SEC User-Agent with your name or organization and contact email when prompted. The notebook downloads the missing public SEC quarters (`2025Q4`, `2026Q1`, `2026Q2`, `2026Q3`) sequentially, skips complete existing quarters, and prepares `MyDrive/financial-risk-detector/data/colab_amendment_proxy.csv.gz`. Do not replace a complete quarter with a partial archive. Preparation may take time; it fits no model.
-4. Open [notebooks/financial_risk_detector_gpu_colab.ipynb](notebooks/financial_risk_detector_gpu_colab.ipynb), choose **Runtime > Change runtime type > GPU**, then run all cells. The notebook checks CUDA before fitting and uses GPU XGBoost and CatBoost. Its training code is embedded, so no separate script upload is needed. If Colab disconnects during model comparison, run it again; outputs are written only after the full comparison and evaluation finish.
-5. Read `MyDrive/financial-risk-detector/colab_outputs/schema_v4_final/metrics.json`. Compare `balanced_holdout`, `natural_holdout_at_natural_threshold`, and the always-negative accuracy baselines. The final holdout model, separate all-data model, model feature columns, and chronological CV leaderboard are saved in the same directory.
+1. `data/colab_amendment_proxy.csv.gz`
+2. `data/restatement_review_queue_ai_refined.csv`, renamed in Drive to `restatement_review_queue.csv` (exploratory labels)
+3. `data/colab_mda_archive_unlabeled.csv.gz`
 
-The data preparation step requires the four newer SEC quarters because an original filed in 2025Q3 must have a complete year of label follow-up. The preparation script refuses missing quarters. The training notebook refuses older feature schemas and a label cutoff before 2026-09-30.
+Open `notebooks/confirmed_restatement_full_archive_gpu_colab.ipynb` in Colab, select a GPU runtime, and run cells in order. It reuses the existing three-year SEC text cache in Drive when available; otherwise it resumes text collection. Results go to `colab_outputs/confirmed_restatement_full_archive_3y/`. The archive is selected from an earlier amendment-proxy case-control corpus, so it supports language feature learning but is not representative of natural filing prevalence. The study's restatement labels remain AI-assisted and exploratory until human-audited.
 
-## What changed from the earlier run
+## Higher-output filing-event proxy experiment
 
-The older all-data XGBoost artifact used **one tree**: early stopping on 2021 selected iteration zero, and the all-data refit copied that count. V4 selected settings on balanced forward folds validated in 2018, 2020, and 2022; it fixed the final tree count to the median selected by those folds and refused fewer than 25 trees. It fitted through 2021, chose thresholds on 2023Q1-Q3, and evaluated on originals filed 2024Q4-2025Q3. The uploaded results have now been inspected, so that later cohort is development evidence for subsequent changes, including v5.
+This is a separate, broader task intended to use the full original MD&A archive and a larger, balanced filing sample. It does **not** measure confirmed-restatement prediction:
 
-Schema v4 also adds issuer history known **strictly before** each original filing: prior amendment count, amendments in the preceding year, time since an earlier amendment, earlier original filing count, time since an earlier original, and past mean reporting delay. Numeric financial facts and ratios remain as-filed. Filing IDs, issuer IDs, dates, label timing, and the label observation cutoff are excluded from predictors. The SEC financial statement data sets do not contain complete 8-K history, so this experiment does not present an incomplete 8-K count as a reliable feature.
+- **Outcome A — same-period amendment proxy:** 1 means a later same-period 10-K/A or 10-Q/A candidate was observed within three years; 0 means the sampled control had no such candidate. Routine amendments may be included.
+- **Outcome B — amendment or screened event:** Outcome A positives, plus reviewed issuer-level restatement/revision events within three years. A control is negative only with reviewed follow-up through the full horizon. Pending controls stay unlabeled and are excluded.
 
-## Limits and source use
+The local AI-refined queue currently produces 2,000 Outcome A rows (1,000 per class) and 1,732 Outcome B rows (1,042 positive, 690 negative); 268 unresolved controls are excluded from Outcome B. These labels come from the sample design and an AI-assisted screen, so report the exact target and describe the estimates as exploratory case-control metrics. The model never receives the queue's candidate-event fields, review fields, evidence, or legacy proxy label as predictors. This may produce stronger metrics, but no percentage is guaranteed.
 
-SEC Financial Statement Data Sets can contain filing or extraction errors and do not include every disclosure. This model should not be described as detecting confirmed restatements. Confirmed-restatement research needs a separately reviewed event ledger with primary filing evidence; [src/11_validate_restatement_labels.py](src/11_validate_restatement_labels.py) checks the ledger structure, but cannot verify human judgments.
+After the current Colab run finishes, generate the new notebook locally:
 
-The quarterly downloader uses only public SEC archives, an identifying User-Agent, sequential requests, retry backoff, and atomic extraction. Do not use fabricated contact details or bypass access restrictions. See the [SEC data set scope](https://www.sec.gov/dera/data/financial-statement-data-sets.html) and [SEC developer access guidance](https://www.sec.gov/about/developer-resources).
+```powershell
+python src/29_build_filing_event_gpu_colab.py
+```
+
+Upload these files to `MyDrive/financial-risk-detector/data/`:
+
+1. `colab_amendment_proxy.csv.gz`
+2. `restatement_review_queue_ai_refined.csv` (the notebook also accepts `restatement_review_queue.csv`)
+3. `colab_mda_archive_unlabeled.csv.gz`
+
+Open `notebooks/filing_event_proxy_gpu_colab.ipynb`, choose a **GPU runtime**, and run cells in order. The notebook checks CUDA and stops if it is unavailable. It reuses `evidence_restatement/3y/sections.sqlite` when that cache is already on Drive; do not run it at the same time as another notebook writing that cache. SEC text collection is resumable and requests at most 500 new filings per session; rerun the setup and collection cells in a later session until pending reaches zero. Use a real identifying SEC User-Agent and stop if SEC denies access.
+
+Results are written to `colab_outputs/filing_event_proxy_h3y/same_period_amendment/` and `colab_outputs/filing_event_proxy_h3y/amendment_or_screened_event/`. Each folder includes a matched future-year holdout, development CV leaderboard, predictions, model files, and a report naming its target. Precision from either 1:1 sample is not population precision. Do not present these proxy scores as confirmed-restatement results.
+
+## Exact steps
+
+### 1. Build the review queue locally
+
+Run PowerShell from the repository folder. This reads the existing local `data/raw/` SEC quarterly files and the prepared feature CSV; it does not fit a model or make SEC requests.
+
+```powershell
+python src/08_build_restatement_candidates.py --max-years 5
+python src/20_prepare_restatement_pilot.py --n-each 1000 --horizon-years 3
+```
+
+The first command rebuilds `data/restatement_candidates.csv` from same-period 10-K/A and 10-Q/A filings within five calendar years. The second creates `data/restatement_review_queue.csv` with up to 1,000 candidate originals and 1,000 comparison controls that have a mature three-year follow-up window. Candidate and control status is for sampling only; neither one assigns an outcome. Use this new queue; the earlier `restatement_review_pilot.csv` lacks the follow-up field required by this pipeline. Use `--horizon-years 1` or `5` only if you will also set that same horizon in the validator and Colab notebook.
+
+### 2. Run the AI-assisted exploratory screen
+
+To prepare a provisional ledger without hand-labeling every row, search the SEC full-text index and retrieve the matching primary documents. Supply a real identifying name and email in the User-Agent:
+
+```powershell
+python src/24_review_restatement_queue.py --user-agent "Your Name your.email@example.com"
+python src/25_refine_restatement_queue.py
+python src/11_validate_restatement_labels.py data/restatement_review_queue_ai_refined.csv --horizon-years 3
+```
+
+This writes `data/restatement_review_queue_ai_refined.csv`, `data/restatement_review_evidence_manifest.csv`, and a resumable search cache. Clearly supported cases are labeled; uncertain evidence remains pending. A negative means the SEC full-text screen found no qualifying event and is provisional. The structural validator checks fields and SEC links, not accounting correctness. Use this ledger only for exploratory model fitting; human adjudication is required before reporting confirmatory metrics.
+
+The SEC client requests sequentially at no more than two per second. It stops on HTTP 403 or 429 and backs off on temporary 5xx responses. Do not bypass access denial.
+
+### 3. Review the outcomes for confirmatory research
+
+For each original filing, review the issuer's SEC filing history and primary filings through the longest horizon you plan to study. Complete or adjudicate `data/restatement_review_queue.csv`:
+
+- `label=1`, `event_type=restatement`: the issuer identifies a material error in previously issued financial statements, a restatement, or non-reliance due to an accounting error. Record the earliest supported event date.
+- `label=0`, `event_type=revision_not_restatement`: a documented immaterial revision or prior-period adjustment that is not a restatement.
+- `label=0`, `event_type=other_amendment`: an amendment for another reason, with no confirmed restatement through the required follow-up.
+- `label=0`, `event_type=no_confirmed_restatement`: no qualifying restatement found after reviewing the issuer's SEC filings through the entered follow-up date.
+
+For every reviewed row, fill `outcome_followup_through`, `evidence_url` (a primary `https://www.sec.gov/` filing), `evidence_excerpt`, `reviewer`, and `review_notes`. For negative labels, the follow-up date must be at least the original filing date plus the selected horizon. Leave uncertain cases `review_status=pending`; do not force them into either class. An amendment alone is not evidence of a restatement.
+
+Validate the completed queue for the 3-year horizon (change `3` to `1` or `5` if that is your preselected target):
+
+```powershell
+python src/11_validate_restatement_labels.py data/restatement_review_queue.csv --horizon-years 3
+```
+
+### 4. Run the GPU notebook
+
+Generate the self-contained notebook:
+
+```powershell
+python src/23_build_restatement_colab.py
+```
+
+In Google Drive, use `MyDrive/financial-risk-detector/` and upload:
+
+1. `data/colab_amendment_proxy.csv.gz`
+2. `data/restatement_review_queue_ai_refined.csv`, renamed on Drive to `restatement_review_queue.csv` for an exploratory run, or the human-adjudicated `data/restatement_review_queue.csv` for a confirmatory run
+3. Optionally, `data/restatement_review_evidence_manifest.csv` for audit; the notebook does not read it
+
+The 27 GB raw folder and the old sampled text CSV are not needed. Open `notebooks/confirmed_restatement_gpu_colab.ipynb` in Colab, choose **Runtime > Change runtime type > T4 GPU**, and run all cells in order. This version writes to `colab_outputs/confirmed_restatement_3y_fulltext_trajectory_v2/` and uses a separate prepared dataset, preserving the previous run for comparison. Set `HORIZON_YEARS` to the same value used for review. Enter a real name/organization and contact email for the SEC User-Agent. The text collector checkpoints to Drive; if it reports pending filings, rerun that cell in a later session until pending is zero. If SEC access is denied with 403, stop and retry later on an allowed connection.
+
+The notebook saves `metrics.json`, `grouped_cv_leaderboard.csv`, `future_holdout_predictions.csv`, `study_report.md`, SHAP feature and feature-group attribution CSVs when supported, and model files for the compared GPU configurations in `colab_outputs/confirmed_restatement_<H>y/`.
+
+## Reading the metrics
+
+The compact model comparison crosses three feature views (financial-only, interpretable MD&A cue rates and changes, and financial plus semantic MD&A changes) with two GPU model families (XGBoost and CatBoost). Training uses every development row with class-weighted loss rather than discarding most controls. Validation and test metrics remain year/form-matched 1:1 samples with no replacement. Model and threshold choices use issuer-grouped development predictions; the latest years remain untouched until final evaluation. The same holdout is reported for all feature/model combinations, and paired PR-AUC/ROC-AUC differences compare each text view with its financial-only baseline within the same model family. SHAP feature attributions describe the selected model; they are not causal effects.
+
+Use `holdout_results_by_view` to compare all six predeclared model/view combinations on the same future holdout. `paired_holdout_auc_differences` gives paired bootstrap differences from each model family’s financial-only baseline. `balanced_holdout_1_to_1` gives the selected development model’s matched-sample result, measured on the latest filing years withheld from fitting and threshold selection; its `balanced_holdout_1_to_1_ci95` fields show stratified bootstrap intervals. Issuers may also appear in earlier development years, matching use on continuing companies; development folds themselves group issuers. `matched_sample_sensitivity_50` shows how the fixed-threshold metrics change across 50 1:1 matches; it is a matching sensitivity analysis, not a confidence interval. `development_cv_1_to_1` is for choosing the feature set and threshold; it is not a final score. `holdout_adequate_for_claim` requires at least 30 held-out examples per class and 10 distinct issuers per class. If it is false, review more outcomes from more issuers before making a strong claim.
+
+Suggested report title: **Does MD&A change add predictive value for a later SEC-reported restatement? A three-year matched temporal-holdout study.** The main question is whether current MD&A language and its change from the prior comparable filing improve prediction beyond structured financial features. `study_report.md` contains the run-specific counts, results, and limitations for a draft. The AI-assisted labels remain exploratory; this small sampled cohort cannot support a claim of population-level predictive performance.
+
+Because the review queue is deliberately enriched with amendment candidates and balanced controls, even the holdout is not a natural-prevalence estimate. Do not report its precision as population precision. The threshold is selected on development folds to maximize the weakest of accuracy, precision, recall, and F1, but optimizing a threshold cannot make weak separation disappear or guarantee a score. For a publishable estimate, freeze the target/model after development and evaluate on a later, untouched, mature cohort.
+
+## Legacy amendment-proxy experiments
+
+The v4/v5 and MDA notebooks remain available for reproducing the earlier **same-period amendment proxy** work. That proxy asks whether a same-period 10-K/A or 10-Q/A appears, not whether a restatement is confirmed. Its results are not results for this research question. In particular, do not reuse proxy labels, the legacy text dataset's `y`, or the proxy prediction as the confirmed-restatement target.
+
+## Source access and use
+
+The SEC materials used here are public filing records. Provide a real identifying User-Agent, request sequentially, respect SEC rate/access responses, and stop rather than bypassing a denial. See the [SEC access guidance](https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data) and [SEC Financial Statement Data Sets description](https://www.sec.gov/dera/data/financial-statement-data-sets.html). These project controls support responsible academic research; they are not a legal certification.

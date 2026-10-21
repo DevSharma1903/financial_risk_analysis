@@ -178,9 +178,27 @@ class ReviewPilot(unittest.TestCase):
         self.assertTrue(result.label.eq('').all())
         self.assertTrue(result.review_status.eq('pending').all())
         self.assertTrue(result.original_adsh.is_unique)
+
+    def test_late_amendment_candidate_is_not_rejected_by_365_day_proxy(self):
+        candidates = pd.DataFrame({
+            'adsh_original':['late'], 'adsh_amendment':['am-late'],
+            'form_original':['10-K'], 'filed_original':[20200101],
+            'filed_amendment':[20220501], 'days_after_original':[851],
+            'amendment_url':['https://www.sec.gov/Archives/example.txt'],
+        })
+        proxy = pd.DataFrame({
+            'adsh':['late','control'], 'cik':['1','2'], 'form':['10-K','10-K'],
+            'filed_date':['2020-01-01','2020-01-05'], 'y_amendment_proxy':[0,0],
+            'sic2':['10','10'],
+        })
+        result=pilot.build_pilot(candidates,proxy,n_each=1,seed=4)
+        case=result[result.sampling_group.eq('same_period_amendment_candidate')]
+        self.assertEqual(case.original_adsh.tolist(),['late'])
+        self.assertEqual(case.days_to_candidate_event.tolist(),[851])
+        self.assertTrue(result.label.eq('').all())
         self.assertTrue(result.evidence_url.eq('').all())
 
-    def test_pilot_does_not_accept_nonpositive_candidate_links(self):
+    def test_pilot_checks_proxy_consistency_only_inside_its_365_day_window(self):
         candidates = pd.DataFrame({
             'adsh_original':['neg'], 'adsh_amendment':['am'], 'form_original':['10-Q'],
             'filed_original':['2020-01-01'], 'filed_amendment':['2020-02-01'],
@@ -188,8 +206,25 @@ class ReviewPilot(unittest.TestCase):
         })
         proxy = pd.DataFrame({'adsh':['neg','control'], 'cik':['1','2'], 'form':['10-Q','10-Q'],
             'filed_date':['2020-01-01','2020-01-02'], 'y_amendment_proxy':[0,0]})
-        with self.assertRaisesRegex(ValueError, 'not positive'):
+        with self.assertRaisesRegex(ValueError, 'does not align'):
             pilot.build_pilot(candidates, proxy, n_each=1)
+
+    def test_horizon_queue_excludes_immature_originals_before_balanced_sampling(self):
+        candidates=pd.DataFrame({
+            'adsh_original':['early','late'], 'adsh_amendment':['am-early','am-late'],
+            'form_original':['10-K','10-K'], 'filed_original':[20200101,20250101],
+            'filed_amendment':[20220501,20260102], 'days_after_original':[851,366],
+            'amendment_url':['https://www.sec.gov/a','https://www.sec.gov/b'],
+        })
+        proxy=pd.DataFrame({
+            'adsh':['early','late','control'], 'cik':['1','2','3'], 'form':['10-K']*3,
+            'filed_date':['2020-01-01','2025-01-01','2020-02-01'],
+            'y_amendment_proxy':[0,0,0], 'sic2':['10']*3,
+            'label_observation_cutoff':['2026-09-30']*3,
+        })
+        result=pilot.build_pilot(candidates,proxy,n_each=1,seed=3,horizon_years=3)
+        self.assertEqual(set(result.original_adsh),{'early','control'})
+        self.assertTrue(result.review_queue_horizon_years.eq(3).all())
 
 
 if __name__ == '__main__':

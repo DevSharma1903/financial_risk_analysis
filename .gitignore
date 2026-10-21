@@ -27,7 +27,7 @@ Thumbs.db
 /colab_outputs/
 /outputs/
 /artifacts/
-/mda_text_case_control_*/
+/mda_text_*/
 *.csv.gz
 *.parquet
 *.feather

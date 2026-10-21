@@ -15,6 +15,7 @@ import sqlite3
 import sys
 from pathlib import Path
 from io import TextIOWrapper
+from contextlib import closing
 
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -191,7 +192,7 @@ def coverage(root: Path, manifest: pd.DataFrame | None = None) -> dict:
     db_path = Path(root) / 'evidence_v5' / 'mda_sections' / 'sections.sqlite'
     if not db_path.is_file():
         return {'requested': len(manifest), 'attempted': 0, 'usable': 0, 'pending': len(manifest)}
-    with open_section_db(db_path) as db:
+    with closing(open_section_db(db_path)) as db:
         statuses = dict(db.execute('SELECT adsh,status FROM mda_sections'))
     status = manifest.adsh.map(statuses)
     return {'requested': len(manifest), 'attempted': int(status.notna().sum()),
@@ -207,7 +208,7 @@ def export_dataset(root: Path, output_path: Path | None = None) -> Path:
     db_path = root / 'evidence_v5' / 'mda_sections' / 'sections.sqlite'
     if not db_path.is_file():
         raise FileNotFoundError(f'No SEC text cache exists yet: {db_path}')
-    with open_section_db(db_path) as db:
+    with closing(open_section_db(db_path)) as db:
         statuses = dict(db.execute('SELECT adsh,status FROM mda_sections'))
         missing = int((~manifest.adsh.isin(statuses)).sum())
         if missing:
